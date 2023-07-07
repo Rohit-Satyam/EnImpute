@@ -24,13 +24,13 @@ ALRA.EnImpute = function(count, k = 0, q = 10){
 DCA.EnImpute= function(count, normtype = "zheng", type = "zinb-conddisp",
                        l2 = 0, l1 = 0, l2enc = 0, l1enc = 0, ridge = 0,
                        gradclip = 5, activation = "relu", hiddensize = "64,32,64",
-                       hyper = FALSE, hypern = 1000){
+                       hyper = FALSE, hypern = 1000, dcaPath=dcaPath){
 
   count = round(count)
   dir.create("./DCA_result")
   utils::write.csv(count,"./DCA_result/count.csv")
 
-  comand = paste("dca ./DCA_result/count.csv ./DCA_result/result",
+  comand = paste( dcaPath, "./DCA_result/count.csv ./DCA_result/result",
                  "--normtype", eval(normtype),
                  "--type", eval(type),
                  "--l2", eval(l2),
@@ -182,13 +182,13 @@ Seurat.EnImpute = function(count, genes.use = NULL, genes.fit = NULL, gram = TRU
   # Create Seurat Object
   SeuratObject = Seurat::CreateSeuratObject(count, normalization.method="LogNormalize")
   # Find Variable Genes
-  SeuratObject = Seurat::FindVariableGenes(object = SeuratObject, do.plot = FALSE)
+  SeuratObject = Seurat::FindVariableFeatures(object = SeuratObject, do.plot = FALSE)
 
   if (is.null(genes.use)){
-    genes.use = SeuratObject@var.genes
+    genes.use = VariableFeatures(SeuratObject)
   }
   if (is.null(genes.fit)){
-    genes.fit = rownames(SeuratObject@data)
+    genes.fit = rownames(GetAssayData(SeuratObject,"data"))
   }
 
   # Impute using the function AddImputedScore
@@ -324,7 +324,7 @@ Seurat.EnImpute = function(count, genes.use = NULL, genes.fit = NULL, gram = TRU
 #' \item{\code{Methods.used}}{The individual methods used by EnImpute.}
 #'
 #' @export
-#' @import DrImpute Rmagic SAVER scImpute scRMD Seurat rsvd
+#' @import DrImpute Rmagic SAVER scImpute Seurat scRMD rsvd
 #'
 #' @author Xiao-Fei Zhang  <zhangxf@mail.ccnu.edu.cn>
 #'
@@ -366,7 +366,7 @@ EnImpute = function(count,  scale.factor = 10000, trim = 0.3,
                     scImpute.drop_thre = 0.5, scImpute.Kcluster = 5, scImpute.labeled = FALSE,
                     scImpute.labels = NULL, scImpute.genelen = NULL, scImpute.ncores = 1,
                     scRMD.tau = NULL, scRMD.lambda = NULL, scRMD.candidate = 0.05,
-                    Seurat.genes.use = NULL, Seurat.genes.fit = NULL, Seurat.gram = TRUE){
+                    Seurat.genes.use = NULL, Seurat.genes.fit = NULL, Seurat.gram = TRUE,dcaPath=NULL){
 
   Methods = c("ALRA", "DCA", "DrImpute", "MAGIC", "SAVER", "scImpute","scRMD" ,"Seurat")
   Methods.idx = c(ALRA, DCA,  DrImpute, MAGIC, SAVER, scImpute, scRMD, Seurat)
@@ -396,7 +396,7 @@ EnImpute = function(count,  scale.factor = 10000, trim = 0.3,
     count.imputed.individual[,,k] = DCA.EnImpute(count, normtype = DCA.normtype, type = DCA.type,
                                                  l2 = DCA.l2, l1 = DCA.l1, l2enc = DCA.l2enc, l1enc = DCA.l1enc, ridge = DCA.ridge,
                                                  gradclip = DCA.gradclip, activation = DCA.activation, hiddensize = DCA.hiddensize,
-                                                 hyper = DCA.hyper, hypern = DCA.hypern)
+                                                 hyper = DCA.hyper, hypern = DCA.hypern, dcaPath=dcaPath)
     k = k +1
   }
 
@@ -472,12 +472,3 @@ EnImpute = function(count,  scale.factor = 10000, trim = 0.3,
                 Methods.used = Methods.used)
   result
 }
-
-
-
-
-
-
-
-
-
